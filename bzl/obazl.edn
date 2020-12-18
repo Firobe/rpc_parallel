@@ -1,0 +1,4 @@
+{
+ :workspace "rpc_parallel"
+ :ppx {:shared-pkg "//bzl/ppx/exe"}
+ }

@@ -1,0 +1,129 @@
+## OBAZL GENERATED FILE ## To retain edits (prevent overwrite), delete this line.
+
+load(
+    "@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_archive",
+    "ocaml_interface",
+    "ocaml_module",
+    "ocaml_ns",
+)
+
+################################################################
+## STANZA 1: LIBRARY RPC_PARALLEL_EXPECT_TEST
+################################################################
+RPC_PARALLEL_EXPECT_TEST_INTERFACE_OPTS = []
+
+RPC_PARALLEL_EXPECT_TEST_MODULE_OPTS = []
+
+RPC_PARALLEL_EXPECT_TEST_DEPS = [
+    # do not sort (buildifier)
+    "@opam//pkg:async",
+    "@opam//pkg:core",
+    "@rpc_parallel//src:rpc_parallel",
+]
+
+RPC_PARALLEL_EXPECT_TEST_PPX = "@//bzl/ppx/exe:ppx_jane"
+
+RPC_PARALLEL_EXPECT_TEST_PPX_ARGS = [
+    # do not sort (buildifier)
+    "-inline-test-lib",
+    "rpc_parallel_expect_test",
+]
+
+##############
+ocaml_archive(
+    name = "rpc_parallel_expect_test",
+    opts = [],
+    visibility = ["//visibility:public"],
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS + [
+        # do not sort (buildifier)
+        ":_Product_worker",
+        ":_Sum_worker",
+        ":_Workers",
+    ],
+)
+
+#########
+ocaml_ns(
+    name = "Rpc_parallel_expect_test_ns",
+    ns = "rpc_parallel_expect_test",
+    opts = [],
+    submodules = [
+        # do not sort (buildifier)
+        "product_worker.ml",
+        "sum_worker.ml",
+        "workers.ml",
+    ],
+)
+
+#############
+ocaml_module(
+    name = "_Product_worker",
+    src = "product_worker.ml",
+    intf = ":_Product_worker.cmi",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_MODULE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Product_worker.cmi",
+    src = "product_worker.mli",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_INTERFACE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Sum_worker",
+    src = "sum_worker.ml",
+    intf = ":_Sum_worker.cmi",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_MODULE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Sum_worker.cmi",
+    src = "sum_worker.mli",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_INTERFACE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Workers",
+    src = "workers.ml",
+    intf = ":_Workers.cmi",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_MODULE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS + [
+        ":_Product_worker",          # obazl:retain
+        ":_Sum_worker"               # obazl:retain
+    ],
+)
+
+################
+ocaml_interface(
+    name = "_Workers.cmi",
+    src = "workers.mli",
+    ns = ":Rpc_parallel_expect_test_ns",
+    opts = RPC_PARALLEL_EXPECT_TEST_INTERFACE_OPTS,
+    ppx = RPC_PARALLEL_EXPECT_TEST_PPX,
+    ppx_args = RPC_PARALLEL_EXPECT_TEST_PPX_ARGS,
+    deps = RPC_PARALLEL_EXPECT_TEST_DEPS,
+)

@@ -1,0 +1,537 @@
+## OBAZL GENERATED FILE ## To retain edits (prevent overwrite), delete this line.
+
+load(
+    "@obazl_rules_ocaml//ocaml:rules.bzl",
+    "ocaml_executable",
+    "ocaml_interface",
+    "ocaml_module",
+)
+
+################################################################
+## STANZA 1: EXECUTABLES
+################################################################
+EXECUTABLES_EXECUTABLE_OPTS = []
+
+EXECUTABLES_INTERFACE_OPTS = []
+
+EXECUTABLES_MODULE_OPTS = []
+
+EXECUTABLES_DEPS = [
+    # do not sort (buildifier)
+    "@opam//pkg:async",
+    "@opam//pkg:core",
+    "@opam//pkg:sexplib",
+    "@rpc_parallel//src:rpc_parallel",
+]
+
+PPX = "//bzl/ppx/exe:ppx_jane"
+
+INLINE_TEST_LIB = "rpc_parallel"
+
+#################
+ocaml_executable(
+    name = "add_numbers.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "alternative_init.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "async_log.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "number_stats.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "reverse_direct_pipe.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "reverse_pipe.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "rpc_direct_pipe.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "serve.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "side_arg.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "spawn_in_foreground.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "stream_workers.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "worker_binprot.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+#################
+ocaml_executable(
+    name = "workers_as_masters.exe",
+    opts = EXECUTABLES_EXECUTABLE_OPTS,
+    visibility = ["//visibility:public"],
+    deps = EXECUTABLES_DEPS + [
+        # do not sort (buildifier)
+    ],
+)
+
+################################################################
+#############
+ocaml_module(
+    name = "_Add_numbers",
+    src = "add_numbers.ml",
+    intf = ":_Add_numbers.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Add_numbers.cmi",
+    src = "add_numbers.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Alternative_init",
+    src = "alternative_init.ml",
+    intf = ":_Alternative_init.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Alternative_init.cmi",
+    src = "alternative_init.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Async_log",
+    src = "async_log.ml",
+    intf = ":_Async_log.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Async_log.cmi",
+    src = "async_log.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Number_stats",
+    src = "number_stats.ml",
+    intf = ":_Number_stats.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Number_stats.cmi",
+    src = "number_stats.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Reverse_direct_pipe",
+    src = "reverse_direct_pipe.ml",
+    intf = ":_Reverse_direct_pipe.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Reverse_direct_pipe.cmi",
+    src = "reverse_direct_pipe.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Reverse_pipe",
+    src = "reverse_pipe.ml",
+    intf = ":_Reverse_pipe.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Reverse_pipe.cmi",
+    src = "reverse_pipe.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Rpc_direct_pipe",
+    src = "rpc_direct_pipe.ml",
+    intf = ":_Rpc_direct_pipe.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Rpc_direct_pipe.cmi",
+    src = "rpc_direct_pipe.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Serve",
+    src = "serve.ml",
+    intf = ":_Serve.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Serve.cmi",
+    src = "serve.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Side_arg",
+    src = "side_arg.ml",
+    intf = ":_Side_arg.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Side_arg.cmi",
+    src = "side_arg.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Spawn_in_foreground",
+    src = "spawn_in_foreground.ml",
+    intf = ":_Spawn_in_foreground.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Spawn_in_foreground.cmi",
+    src = "spawn_in_foreground.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Stream_workers",
+    src = "stream_workers.ml",
+    intf = ":_Stream_workers.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Stream_workers.cmi",
+    src = "stream_workers.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Worker_binprot",
+    src = "worker_binprot.ml",
+    intf = ":_Worker_binprot.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Worker_binprot.cmi",
+    src = "worker_binprot.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+#############
+ocaml_module(
+    name = "_Workers_as_masters",
+    src = "workers_as_masters.ml",
+    intf = ":_Workers_as_masters.cmi",
+    opts = EXECUTABLES_MODULE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
+
+################
+ocaml_interface(
+    name = "_Workers_as_masters.cmi",
+    src = "workers_as_masters.mli",
+    opts = EXECUTABLES_INTERFACE_OPTS,
+    ppx = PPX,
+    ppx_args = [
+        # do not sort (buildifier)
+        "-inline-test-lib",
+        INLINE_TEST_LIB,
+    ],
+    deps = EXECUTABLES_DEPS,
+)
