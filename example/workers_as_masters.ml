@@ -76,7 +76,9 @@ module Primary_worker = struct
               ~on_failure:Error.raise
               ()
           in
-          ignore (Bag.add workers (next_worker_name (), secondary_worker)))
+          ignore
+            (Bag.add workers (next_worker_name (), secondary_worker)
+             : (string * Secondary_worker.worker) Bag.Elt.t))
         >>| ignore
       ;;
 
@@ -143,7 +145,8 @@ let command =
          >>=? fun () ->
          Primary_worker.Connection.run conn ~f:Primary_worker.functions.ping ~arg:()
          >>|? fun ping_results ->
-         List.map ping_results ~f:(fun s -> sprintf "Primary worker #%i: %s" worker_id s))
+         List.map ping_results ~f:(fun s ->
+           sprintf "Primary worker #%i: %s" worker_id s))
        >>|? fun l -> List.iter (List.join l) ~f:(printf "%s\n%!"))
 ;;
 
