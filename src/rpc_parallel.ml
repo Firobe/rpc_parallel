@@ -11,12 +11,19 @@ open! Core
     [Worker.t] as well as the implementations for these functions. In addition, [T]
     specifies worker states and connection states. See README for more details *)
 
-module Remote_executable = Remote_executable
-module Executable_location = Executable_location
 module Fd_redirection = Fd_redirection
-module Managed = Parallel_managed
+module How_to_run = How_to_run
 module Map_reduce = Map_reduce
+module Prog_and_args = Prog_and_args
+module Remote_executable = Remote_executable
 include Parallel
+
+(** [Rpc_parallel.Managed] is a wrapper around [Rpc_parallel] that attempts to make manage
+    connections for you, but it ended up being too magical to reason about, so you should
+    prefer to use the plain [Rpc_parallel] interface. *)
+module Managed = Parallel_managed
+[@@alert
+  legacy "Prefer using the plain [Rpc_parallel] instead of [Rpc_parallel.Managed]"]
 
 (** Old [Std] style interface, which has slightly different module names. *)
 module Std = struct end
