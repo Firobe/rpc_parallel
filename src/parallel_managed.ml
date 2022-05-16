@@ -16,7 +16,7 @@ module type Worker = sig
   val id : t -> Id.t
 
   val spawn
-    :  ?where:Executable_location.t
+    :  ?how:How_to_run.t
     -> ?name:string
     -> ?env:(string * string) list
     -> ?connection_timeout:Time.Span.t
@@ -27,10 +27,11 @@ module type Worker = sig
     -> worker_state_init_arg
     -> connection_state_init_arg
     -> on_failure:(Error.t -> unit)
+    -> on_connection_to_worker_closed:(Error.t -> unit)
     -> t Or_error.t Deferred.t
 
   val spawn_exn
-    :  ?where:Executable_location.t
+    :  ?how:How_to_run.t
     -> ?name:string
     -> ?env:(string * string) list
     -> ?connection_timeout:Time.Span.t
@@ -41,6 +42,7 @@ module type Worker = sig
     -> worker_state_init_arg
     -> connection_state_init_arg
     -> on_failure:(Error.t -> unit)
+    -> on_connection_to_worker_closed:(Error.t -> unit)
     -> t Deferred.t
 
   val run
@@ -109,7 +111,7 @@ module Make (S : Parallel.Worker_spec) = struct
   ;;
 
   let spawn
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -120,15 +122,16 @@ module Make (S : Parallel.Worker_spec) = struct
         worker_state_init_arg
         connection_state_init_arg
         ~on_failure
+        ~on_connection_to_worker_closed
     =
     Unmanaged.spawn
-      ?where
+      ?how
       ?env
       ?name
       ?connection_timeout
       ?cd
       ?umask
-      ~shutdown_on:Heartbeater_timeout
+      ~shutdown_on:Heartbeater_connection_timeout
       ~redirect_stdout
       ~redirect_stderr
       worker_state_init_arg
@@ -148,12 +151,12 @@ module Make (S : Parallel.Worker_spec) = struct
      | Some _ ->
        Hashtbl.remove workers id;
        let error = Error.createf !"Lost connection with worker" in
-       on_failure error);
+       on_connection_to_worker_closed error);
     { unmanaged = worker; connection_state_init_arg; id }
   ;;
 
   let spawn_exn
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -164,9 +167,10 @@ module Make (S : Parallel.Worker_spec) = struct
         worker_state_init_arg
         connection_init_arg
         ~on_failure
+        ~on_connection_to_worker_closed
     =
     spawn
-      ?where
+      ?how
       ?name
       ?env
       ?connection_timeout
@@ -177,6 +181,7 @@ module Make (S : Parallel.Worker_spec) = struct
       worker_state_init_arg
       connection_init_arg
       ~on_failure
+      ~on_connection_to_worker_closed
     >>| Or_error.ok_exn
   ;;
 

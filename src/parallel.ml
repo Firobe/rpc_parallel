@@ -29,14 +29,24 @@ module Worker_id = Utils.Worker_id
 
 module Rpc_settings = struct
   type t =
-    { max_message_size : int option
-    ; handshake_timeout : Time.Span.t option
-    ; heartbeat_config : Rpc.Connection.Heartbeat_config.t option
+    { max_message_size : int option [@sexp.option]
+    ; handshake_timeout : Time.Span.t option [@sexp.option]
+    ; heartbeat_config : Rpc.Connection.Heartbeat_config.t option [@sexp.option]
     }
   [@@deriving sexp, bin_io]
 
-  let create ~max_message_size ~handshake_timeout ~heartbeat_config =
-    { max_message_size; handshake_timeout; heartbeat_config }
+  let env_var = "RPC_PARALLEL_RPC_SETTINGS"
+
+  let create_with_env_override ~max_message_size ~handshake_timeout ~heartbeat_config =
+    match Sys.getenv env_var with
+    | None -> { max_message_size; handshake_timeout; heartbeat_config }
+    | Some value ->
+      let from_env = [%of_sexp: t] (Sexp.of_string value) in
+      { max_message_size = Option.first_some from_env.max_message_size max_message_size
+      ; handshake_timeout =
+          Option.first_some from_env.handshake_timeout handshake_timeout
+      ; heartbeat_config = Option.first_some from_env.heartbeat_config heartbeat_config
+      }
   ;;
 end
 
@@ -315,7 +325,7 @@ module Function = struct
         * ('q, 'query * 'in_progress) Type_equal.t
         -> ('worker, 'q, 'response) t_internal
 
-  type ('worker, 'query, 'response) t =
+  type ('worker, 'query, +'response) t =
     | T :
         ('query -> 'query_internal)
         * ('worker, 'query_internal, 'response_internal) t_internal
@@ -641,7 +651,7 @@ let init_master_state
   | Some _state -> failwith "Master state must not be set up twice"
   | None ->
     let app_rpc_settings =
-      Rpc_settings.create
+      Rpc_settings.create_with_env_override
         ~max_message_size:rpc_max_message_size
         ~handshake_timeout:rpc_handshake_timeout
         ~heartbeat_config:rpc_heartbeat_config
@@ -697,7 +707,7 @@ module Make (S : Worker_spec) = struct
       type_ : Worker_type_id.t
     (* Persistent states associated with instances of this worker server *)
     ; states : S.Worker_state.t Worker_id.Table.t
-    (* To facilitate cleanup in the [Shutdown_on.Disconnect] case *)
+    (* To facilitate cleanup in the [Shutdown_on.Connection_closed] case *)
     ; mutable client_has_connected : bool
     (* Build up a list of all implementations for this worker type *)
     ; mutable implementations :
@@ -764,27 +774,14 @@ module Make (S : Worker_spec) = struct
     ;;
   end
 
-  let run_executable where ~env ~worker_command_args ~input =
+  let run_executable how ~env ~worker_command_args ~input =
     Utils.create_worker_env ~extra:env
     |> return
     >>=? fun env ->
-    match where with
-    | Executable_location.Local ->
-      Utils.our_binary () >>=? fun our_binary ->
-      Process.create
-        ~prog:our_binary
-        ~argv0:(Sys.get_argv ()).(0)
-        ~args:worker_command_args
-        ~env:(`Extend env)
-        ()
-      >>|? fun p ->
-      Writer.write_sexp (Process.stdin p) input;
-      p
-    | Executable_location.Remote exec ->
-      Remote_executable.run exec ~env ~args:worker_command_args
-      >>|? fun p ->
-      Writer.write_sexp (Process.stdin p) input;
-      p
+    How_to_run.run how ~env ~worker_command_args
+    >>|? fun p ->
+    Writer.write_sexp (Process.stdin p) input;
+    p
   ;;
 
   module Function_creator = struct
@@ -904,7 +901,10 @@ module Make (S : Worker_spec) = struct
       let%map state = User_functions.init_worker_state worker_state_init_arg in
       Hashtbl.add_exn worker_state.states ~key:id ~data:state;
       let rpc_settings =
-        Rpc_settings.create ~max_message_size ~handshake_timeout ~heartbeat_config
+        Rpc_settings.create_with_env_override
+          ~max_message_size
+          ~handshake_timeout
+          ~heartbeat_config
       in
       { host_and_port = Host_and_port.create ~host ~port; rpc_settings; id; name = None }
   ;;
@@ -973,11 +973,11 @@ module Make (S : Worker_spec) = struct
 
   module Shutdown_on (M : T1) = struct
     type _ t =
-      | Disconnect
+      | Connection_closed
         : (connection_state_init_arg:S.Connection_state.init_arg
            -> Connection.t M.t Deferred.t)
             t
-      | Heartbeater_timeout : worker M.t Deferred.t t
+      | Heartbeater_connection_timeout : worker M.t Deferred.t t
       | Called_shutdown_function : worker M.t Deferred.t t
 
     let args
@@ -986,9 +986,9 @@ module Make (S : Worker_spec) = struct
         -> [ `Client_will_immediately_connect of bool ]
            * [ `Setup_master_heartbeater of bool ]
       = function
-        | Heartbeater_timeout ->
+        | Heartbeater_connection_timeout ->
           `Client_will_immediately_connect false, `Setup_master_heartbeater true
-        | Disconnect ->
+        | Connection_closed ->
           (* No heartbeater needed because we call
              [Connection.client_with_worker_shutdown_on_disconnect] and the worker shuts
              itself down if it times out waiting for a connection from the master. *)
@@ -999,7 +999,7 @@ module Make (S : Worker_spec) = struct
   end
 
   type 'a with_spawn_args =
-    ?where:Executable_location.t
+    ?how:How_to_run.t
     -> ?name:string
     -> ?env:(string * string) list
     -> ?connection_timeout:Time.Span.t
@@ -1015,7 +1015,7 @@ module Make (S : Worker_spec) = struct
      (2) a worker hasn't gotten its [init_arg] from the master within [connection_timeout]
      of sending the register rpc
 
-     Additionally, if [~shutdown_on:Disconnect] was used:
+     Additionally, if [~shutdown_on:Connection_closed] was used:
      (3) a worker will shut itself down if it doesn't get a connection from the master
      after spawn succeeded. *)
   let connection_timeout_default = sec 10.
@@ -1044,8 +1044,8 @@ module Make (S : Worker_spec) = struct
          Option.map (Unix.getenv var) ~f:(fun value -> var, value)))
   ;;
 
-  let spawn_process ~where ~env ~cd ~name ~connection_timeout ~daemonize_args =
-    let where = Option.value where ~default:Executable_location.Local in
+  let spawn_process ~how ~env ~cd ~name ~connection_timeout ~daemonize_args =
+    let how = Option.value how ~default:How_to_run.local in
     let env =
       (* [force ocaml_env_from_parent] must come before [Option.value env ~default:[]]
          so any user-supplied [env] can override [ocaml_env_from_parent]. *)
@@ -1092,7 +1092,7 @@ module Make (S : Worker_spec) = struct
         if pass_name then args @ Option.to_list name else args
     in
     Hashtbl.add_exn global_state.pending ~key:id ~data:pending_ivar;
-    match%map run_executable where ~env ~worker_command_args ~input with
+    match%map run_executable how ~env ~worker_command_args ~input with
     | Error _ as err ->
       Hashtbl.remove global_state.pending id;
       err
@@ -1207,7 +1207,7 @@ module Make (S : Worker_spec) = struct
 
   let spawn_in_foreground_aux
         (type a)
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1228,7 +1228,7 @@ module Make (S : Worker_spec) = struct
     let with_spawned_worker ~client_will_immediately_connect ~setup_master_heartbeater ~f
       =
       let%bind id, process =
-        spawn_process ~where ~env ~cd ~name ~connection_timeout ~daemonize_args
+        spawn_process ~how ~env ~cd ~name ~connection_timeout ~daemonize_args
         |> Deferred.Result.map_error ~f:(fun e -> e, `Worker_process None)
       in
       finalize_on_error
@@ -1249,12 +1249,12 @@ module Make (S : Worker_spec) = struct
            f (worker, process))
     in
     match shutdown_on with
-    | Heartbeater_timeout ->
+    | Heartbeater_connection_timeout ->
       with_spawned_worker
         ~client_will_immediately_connect
         ~setup_master_heartbeater
         ~f:return
-    | Disconnect ->
+    | Connection_closed ->
       fun ~connection_state_init_arg ->
         with_spawned_worker
           ~client_will_immediately_connect
@@ -1283,7 +1283,7 @@ module Make (S : Worker_spec) = struct
 
   let spawn_in_foreground
         (type a)
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1299,7 +1299,7 @@ module Make (S : Worker_spec) = struct
       : a
       =
       spawn_in_foreground_aux
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1309,12 +1309,12 @@ module Make (S : Worker_spec) = struct
         worker_state_init_arg
     in
     match shutdown_on with
-    | Heartbeater_timeout ->
-      spawn_in_foreground_aux ~shutdown_on:Heartbeater_timeout
+    | Heartbeater_connection_timeout ->
+      spawn_in_foreground_aux ~shutdown_on:Heartbeater_connection_timeout
       >>| Result.map_error ~f:fst
-    | Disconnect ->
+    | Connection_closed ->
       fun ~connection_state_init_arg ->
-        spawn_in_foreground_aux ~shutdown_on:Disconnect ~connection_state_init_arg
+        spawn_in_foreground_aux ~shutdown_on:Connection_closed ~connection_state_init_arg
         >>| Result.map_error ~f:fst
     | Called_shutdown_function ->
       spawn_in_foreground_aux ~shutdown_on:Called_shutdown_function
@@ -1330,7 +1330,7 @@ module Make (S : Worker_spec) = struct
 
   let spawn_in_foreground_exn
         (type a)
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1342,33 +1342,33 @@ module Make (S : Worker_spec) = struct
     =
     let open Spawn_in_foreground_exn_shutdown_on in
     match shutdown_on with
-    | Disconnect ->
+    | Connection_closed ->
       fun ~connection_state_init_arg ->
         spawn_in_foreground
-          ?where
+          ?how
           ?name
           ?env
           ?connection_timeout
           ?cd
           ~on_failure
-          ~shutdown_on:Disconnect
+          ~shutdown_on:Connection_closed
           init_arg
           ~connection_state_init_arg
         >>| ok_exn
-    | Heartbeater_timeout ->
+    | Heartbeater_connection_timeout ->
       spawn_in_foreground
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
         ?cd
         ~on_failure
-        ~shutdown_on:Heartbeater_timeout
+        ~shutdown_on:Heartbeater_connection_timeout
         init_arg
       >>| ok_exn
     | Called_shutdown_function ->
       spawn_in_foreground
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1404,7 +1404,7 @@ module Make (S : Worker_spec) = struct
 
   let spawn
         (type a)
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1427,7 +1427,7 @@ module Make (S : Worker_spec) = struct
     in
     let spawn_worker ~client_will_immediately_connect ~setup_master_heartbeater =
       match%bind
-        spawn_process ~where ~env ~cd ~name ~connection_timeout ~daemonize_args
+        spawn_process ~how ~env ~cd ~name ~connection_timeout ~daemonize_args
       with
       | Error e -> return (Error e)
       | Ok (id, process) ->
@@ -1446,9 +1446,9 @@ module Make (S : Worker_spec) = struct
     in
     let open Spawn_shutdown_on in
     match shutdown_on with
-    | Heartbeater_timeout ->
+    | Heartbeater_connection_timeout ->
       spawn_worker ~client_will_immediately_connect ~setup_master_heartbeater
-    | Disconnect ->
+    | Connection_closed ->
       fun ~connection_state_init_arg ->
         spawn_worker ~client_will_immediately_connect ~setup_master_heartbeater
         >>=? fun worker ->
@@ -1465,7 +1465,7 @@ module Make (S : Worker_spec) = struct
 
   let spawn_exn
         (type a)
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1480,39 +1480,39 @@ module Make (S : Worker_spec) = struct
     =
     let open Spawn_exn_shutdown_on in
     match shutdown_on with
-    | Disconnect ->
+    | Connection_closed ->
       fun ~connection_state_init_arg ->
         spawn
-          ?where
+          ?how
           ?name
           ?env
           ?connection_timeout
           ?cd
           ~on_failure
           ?umask
-          ~shutdown_on:Disconnect
+          ~shutdown_on:Connection_closed
           ~redirect_stdout
           ~redirect_stderr
           init_arg
           ~connection_state_init_arg
         >>| ok_exn
-    | Heartbeater_timeout ->
+    | Heartbeater_connection_timeout ->
       spawn
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
         ?cd
         ~on_failure
         ?umask
-        ~shutdown_on:Heartbeater_timeout
+        ~shutdown_on:Heartbeater_connection_timeout
         ~redirect_stdout
         ~redirect_stderr
         init_arg
       >>| ok_exn
     | Called_shutdown_function ->
       spawn
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1528,7 +1528,7 @@ module Make (S : Worker_spec) = struct
 
   module Deprecated = struct
     let spawn_and_connect
-          ?where
+          ?how
           ?name
           ?env
           ?connection_timeout
@@ -1541,7 +1541,7 @@ module Make (S : Worker_spec) = struct
           worker_state_init_arg
       =
       spawn
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1550,7 +1550,7 @@ module Make (S : Worker_spec) = struct
         ~redirect_stdout
         ~redirect_stderr
         ~on_failure
-        ~shutdown_on:Heartbeater_timeout
+        ~shutdown_on:Heartbeater_connection_timeout
         worker_state_init_arg
       >>=? fun worker ->
       with_shutdown_on_error worker ~f:(fun () ->
@@ -1559,7 +1559,7 @@ module Make (S : Worker_spec) = struct
     ;;
 
     let spawn_and_connect_exn
-          ?where
+          ?how
           ?name
           ?env
           ?connection_timeout
@@ -1572,7 +1572,7 @@ module Make (S : Worker_spec) = struct
           worker_state_init_arg
       =
       spawn_and_connect
-        ?where
+        ?how
         ?name
         ?env
         ?connection_timeout
@@ -1740,8 +1740,10 @@ let worker_main ~worker_env =
         (Tcp.Where_to_connect.of_host_and_port config.master)
         (fun conn -> Rpc.Rpc.dispatch Register_rpc.rpc conn (id, my_host_and_port))
     with
-    | Error exn -> failwiths "Worker failed to register" exn [%sexp_of: Exn.t]
-    | Ok (Error e) -> failwiths "Worker failed to register" e [%sexp_of: Error.t]
+    | Error exn ->
+      failwiths ~here:[%here] "Worker failed to register" exn [%sexp_of: Exn.t]
+    | Ok (Error e) ->
+      failwiths ~here:[%here] "Worker failed to register" e [%sexp_of: Error.t]
     | Ok (Ok `Shutdown) -> failwith "Got [`Shutdown] on register"
     | Ok (Ok `Registered) -> ()
   in

@@ -70,7 +70,7 @@ module Primary_worker = struct
         Deferred.List.init ~how:`Parallel num_workers ~f:(fun _i ->
           let%map secondary_worker =
             Secondary_worker.spawn_exn
-              ~shutdown_on:Heartbeater_timeout
+              ~shutdown_on:Heartbeater_connection_timeout
               ~redirect_stdout:`Dev_null
               ~redirect_stderr:`Dev_null
               ~on_failure:Error.raise
@@ -87,7 +87,8 @@ module Primary_worker = struct
       let ping_impl ~worker_state:() ~conn_state:() () =
         Deferred.List.map ~how:`Parallel (Bag.to_list workers) ~f:(fun (name, worker) ->
           match%bind Secondary_worker.Connection.client worker () with
-          | Error e -> failwiths "failed connecting to worker" e [%sexp_of: Error.t]
+          | Error e ->
+            failwiths ~here:[%here] "failed connecting to worker" e [%sexp_of: Error.t]
           | Ok conn ->
             (match%map
                Secondary_worker.Connection.run
@@ -131,7 +132,7 @@ let command =
     (fun primary secondary () ->
        Deferred.Or_error.List.init ~how:`Parallel primary ~f:(fun worker_id ->
          Primary_worker.spawn
-           ~shutdown_on:Disconnect
+           ~shutdown_on:Connection_closed
            ~redirect_stdout:`Dev_null
            ~redirect_stderr:`Dev_null
            ~on_failure:Error.raise
